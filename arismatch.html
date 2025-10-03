@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Adventure Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 48px;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #764ba2;
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            font-size: 24px;
+            padding: 15px;
+            margin: 10px;
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 300px;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+
+        button {
+            font-size: 28px;
+            padding: 15px 40px;
+            margin: 20px 10px;
+            border: none;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .character-option {
+            display: inline-block;
+            margin: 20px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .character-option:hover {
+            transform: scale(1.2);
+        }
+
+        .character-emoji {
+            font-size: 100px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        #game-screen {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98D8C8 100%);
+        }
+
+        #game-area {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #game-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            z-index: 100;
+        }
+
+        #problem {
+            font-size: 48px;
+            color: #764ba2;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        #level-info {
+            font-size: 24px;
+            color: #667eea;
+        }
+
+        #character {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 80px;
+            cursor: pointer;
+            transition: left 0.1s;
+            user-select: none;
+        }
+
+        .falling-item {
+            position: absolute;
+            font-size: 48px;
+            font-weight: bold;
+            background: white;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            animation: fall linear;
+            user-select: none;
+        }
+
+        @keyframes fall {
+            from {
+                top: -100px;
+            }
+            to {
+                top: 100vh;
+            }
+        }
+
+        .candy {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .correct-answer {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .wrong-answer {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .feedback {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 72px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            animation: fadeOut 1s;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        @keyframes fadeOut {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(1.5);
+            }
+        }
+
+        .results-stat {
+            font-size: 28px;
+            margin: 20px 0;
+            color: #333;
+        }
+
+        .emoji-large {
+            font-size: 100px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="start-screen" class="screen active">
+        <div class="card">
+            <h1>🎮 Math Adventure! 🎮</h1>
+            <p style="font-size: 24px; color: #666; margin-bottom: 30px;">
+                Help your character catch the right answers!
+            </p>
+            <input type="text" id="username" placeholder="Enter your name" maxlength="20">
+            <br>
+            <input type="number" id="age" placeholder="Enter your age" min="1" max="100">
+            <br>
+            <button onclick="startGame()">Start Game</button>
+        </div>
+    </div>
+
+    <div id="character-screen" class="screen">
+        <div class="card">
+            <h1>Choose Your Character!</h1>
+            <div class="character-option" onclick="selectCharacter('🐶')">
+                <span class="character-emoji">🐶</span>
+                <p style="font-size: 24px; color: #667eea;">Baby Puppy</p>
+            </div>
+            <div class="character-option" onclick="selectCharacter('🐱')">
+                <span class="character-emoji">🐱</span>
+                <p style="font-size: 24px; color: #764ba2;">Baby Kitten</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div id="game-area">
+            <div id="game-info">
+                <div id="problem"></div>
+                <div id="level-info"></div>
+            </div>
+            <div id="character"></div>
+        </div>
+    </div>
+
+    <div id="results-screen" class="screen">
+        <div class="card">
+            <h1>🎉 Great Job! 🎉</h1>
+            <div class="emoji-large">🏆</div>
+            <div class="results-stat">Player: <span id="result-name"></span></div>
+            <div class="results-stat">Levels Completed: <span id="result-levels"></span>/10</div>
+            <div class="results-stat">Total Time: <span id="result-time"></span></div>
+            <div class="results-stat">Score: <span id="result-score"></span></div>
+            <button onclick="finishGame()">Finish</button>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            username: '',
+            age: 0,
+            character: '',
+            currentLevel: 1,
+            score: 0,
+            startTime: 0,
+            characterX: 50
+        };
+
+        const levels = [
+            { a: 1, b: 1 }, { a: 2, b: 2 }, { a: 3, b: 2 }, { a: 4, b: 3 },
+            { a: 5, b: 4 }, { a: 6, b: 3 }, { a: 5, b: 5 }, { a: 7, b: 4 },
+            { a: 6, b: 6 }, { a: 7, b: 8 }
+        ];
+
+        let fallingItems = [];
+        let animationId = null;
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function startGame() {
+            const username = document.getElementById('username').value.trim();
+            const age = parseInt(document.getElementById('age').value);
+
+            if (!username) {
+                alert('Please enter your name!');
+                return;
+            }
+            if (!age || age < 1 || age > 100) {
+                alert('Please enter a valid age!');
+                return;
+            }
+
+            gameState.username = username;
+            gameState.age = age;
+            showScreen('character-screen');
+        }
+
+        function selectCharacter(character) {
+            gameState.character = character;
+            gameState.currentLevel = 1;
+            gameState.score = 0;
+            gameState.startTime = Date.now();
+            showScreen('game-screen');
+            startLevel();
+        }
+
+        function startLevel() {
+            if (gameState.currentLevel > 10) {
+                endGame();
+                return;
+            }
+
+            const level = levels[gameState.currentLevel - 1];
+            const correctAnswer = level.a + level.b;
+
+            document.getElementById('problem').textContent = `${level.a} + ${level.b} = ?`;
+            document.getElementById('level-info').textContent = `Level ${gameState.currentLevel}/10`;
+            document.getElementById('character').textContent = gameState.character;
+
+            fallingItems = [];
+            document.querySelectorAll('.falling-item').forEach(item => item.remove());
+
+            gameState.characterX = 50;
+            updateCharacterPosition();
+
+            createFallingItems(correctAnswer);
+        }
+
+        function createFallingItems(correctAnswer) {
+            const items = [];
+            
+            items.push({ value: correctAnswer, type: 'correct', delay: Math.random() * 2000 });
+            
+            for (let i = 0; i < 3; i++) {
+                let wrong;
+                do {
+                    wrong = Math.floor(Math.random() * 20) + 1;
+                } while (wrong === correctAnswer || items.some(item => item.value === wrong));
+                items.push({ value: wrong, type: 'wrong', delay: Math.random() * 2000 });
+            }
+
+            for (let i = 0; i < 3; i++) {
+                items.push({ value: '🍬', type: 'candy', delay: Math.random() * 2000 });
+            }
+
+            items.forEach(item => {
+                setTimeout(() => createFallingItem(item.value, item.type, correctAnswer), item.delay);
+            });
+        }
+
+        function createFallingItem(value, type, correctAnswer) {
+            const item = document.createElement('div');
+            item.className = `falling-item ${type === 'correct' ? 'correct-answer' : type === 'candy' ? 'candy' : 'wrong-answer'}`;
+            item.textContent = value;
+            item.style.left = Math.random() * (window.innerWidth - 80) + 'px';
+            
+            const duration = 4000 + Math.random() * 2000;
+            item.style.animationDuration = duration + 'ms';
+
+            document.getElementById('game-area').appendChild(item);
+
+            const itemData = {
+                element: item,
+                value: value,
+                type: type,
+                correctAnswer: correctAnswer,
+                startTime: Date.now(),
+                duration: duration
+            };
+
+            fallingItems.push(itemData);
+
+            if (!animationId) {
+                animationId = requestAnimationFrame(checkCollisions);
+            }
+        }
+
+        function checkCollisions() {
+            const character = document.getElementById('character');
+            const charRect = character.getBoundingClientRect();
+            let correctAnswerMissed = false;
+
+            fallingItems = fallingItems.filter(itemData => {
+                const itemRect = itemData.element.getBoundingClientRect();
+                
+                if (itemRect.bottom > window.innerHeight) {
+                    itemData.element.remove();
+                    
+                    if (itemData.type === 'correct') {
+                        correctAnswerMissed = true;
+                    }
+                    
+                    return false;
+                }
+
+                const collision = !(itemRect.right < charRect.left || 
+                                  itemRect.left > charRect.right || 
+                                  itemRect.bottom < charRect.top || 
+                                  itemRect.top > charRect.bottom);
+
+                if (collision) {
+                    itemData.element.remove();
+                    
+                    if (itemData.type === 'correct') {
+                        showFeedback('Correct! 🎉', '#4CAF50');
+                        gameState.score += 10;
+                        gameState.currentLevel++;
+                        fallingItems.forEach(item => item.element.remove());
+                        fallingItems = [];
+                        setTimeout(() => startLevel(), 1500);
+                    } else if (itemData.type === 'wrong') {
+                        showFeedback('Oops! Try again! 😅', '#f44336');
+                    } else {
+                        showFeedback('Yummy! 🍬', '#FF9800');
+                    }
+                    
+                    return false;
+                }
+
+                return true;
+            });
+
+            if (correctAnswerMissed) {
+                showFeedback('Missed! Try again! 💪', '#FF9800');
+                fallingItems.forEach(item => item.element.remove());
+                fallingItems = [];
+                setTimeout(() => startLevel(), 1500);
+            }
+
+            if (fallingItems.length > 0) {
+                animationId = requestAnimationFrame(checkCollisions);
+            } else {
+                animationId = null;
+            }
+        }
+
+        function showFeedback(message, color) {
+            const feedback = document.createElement('div');
+            feedback.className = 'feedback';
+            feedback.textContent = message;
+            feedback.style.color = color;
+            document.getElementById('game-area').appendChild(feedback);
+            
+            setTimeout(() => feedback.remove(), 1000);
+        }
+
+        function updateCharacterPosition() {
+            const character = document.getElementById('character');
+            character.style.left = gameState.characterX + '%';
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('game-screen').classList.contains('active')) {
+                if (e.key === 'ArrowLeft') {
+                    gameState.characterX = Math.max(0, gameState.characterX - 5);
+                    updateCharacterPosition();
+                } else if (e.key === 'ArrowRight') {
+                    gameState.characterX = Math.min(90, gameState.characterX + 5);
+                    updateCharacterPosition();
+                }
+            }
+        });
+
+        let isDragging = false;
+
+        document.getElementById('character').addEventListener('mousedown', (e) => {
+            isDragging = true;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging && document.getElementById('game-screen').classList.contains('active')) {
+                const gameArea = document.getElementById('game-area');
+                const rect = gameArea.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                gameState.characterX = Math.max(0, Math.min(90, (x / rect.width) * 100));
+                updateCharacterPosition();
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        document.getElementById('character').addEventListener('touchstart', (e) => {
+            isDragging = true;
+            e.preventDefault();
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (isDragging && document.getElementById('game-screen').classList.contains('active')) {
+                const gameArea = document.getElementById('game-area');
+                const rect = gameArea.getBoundingClientRect();
+                const touch = e.touches[0];
+                const x = touch.clientX - rect.left;
+                gameState.characterX = Math.max(0, Math.min(90, (x / rect.width) * 100));
+                updateCharacterPosition();
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        function endGame() {
+            const totalTime = Math.floor((Date.now() - gameState.startTime) / 1000);
+            const minutes = Math.floor(totalTime / 60);
+            const seconds = totalTime % 60;
+            
+            document.getElementById('result-name').textContent = gameState.username;
+            document.getElementById('result-levels').textContent = gameState.currentLevel - 1;
+            document.getElementById('result-time').textContent = `${minutes}m ${seconds}s`;
+            document.getElementById('result-score').textContent = gameState.score + ' points';
+            
+            showScreen('results-screen');
+        }
+
+        function finishGame() {
+            document.getElementById('username').value = '';
+            document.getElementById('age').value = '';
+            gameState = {
+                username: '',
+                age: 0,
+                character: '',
+                currentLevel: 1,
+                score: 0,
+                startTime: 0,
+                characterX: 50
+            };
+            showScreen('start-screen');
+        }
+    </script>
+</body>
+</html>
